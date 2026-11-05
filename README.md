@@ -2,7 +2,7 @@
 
 HabitLens is a web app that helps you understand how you spend your time on digital devices. You log your daily app usage, and the system shows charts, spots patterns using machine learning, tracks your goals, and gives personalised insights about your habits.
 
-Built with **Flask**, **MySQL**, **HTML/CSS/JavaScript** and **scikit-learn** (K-Means Clustering and Decision Tree).
+Built with **Python** (backend), **MySQL**, **HTML/CSS/JavaScript** and **scikit-learn** (K-Means Clustering and Decision Tree).
 
 <!-- Add a screenshot after you take one:
 ![Dashboard](screenshots/dashboard.png)
@@ -49,7 +49,7 @@ Built with **Flask**, **MySQL**, **HTML/CSS/JavaScript** and **scikit-learn** (K
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python, Flask |
+| Backend | Python |
 | Database | MySQL |
 | Data analysis | pandas, NumPy |
 | Machine learning | scikit-learn |
