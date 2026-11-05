@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Profile{% endblock %}
+{% block content %}<div class="container">
+<div class="page-head"><div><h1>My Profile</h1><p class="muted">{{ user.email }} &middot; member since {{ user.created_at.strftime('%d %b %Y') }}</p></div></div>
+<div class="grid g2">
+  <div class="card"><h2>Personal information</h2>
+    <form method="post"><input type="hidden" name="action" value="info">
+      <label>Full name</label><input name="full_name" value="{{ user.full_name }}" required>
+      <label>Age</label><input type="number" name="age" min="5" max="100" value="{{ user.age or '' }}">
+      <label>Occupation</label><input name="occupation" value="{{ user.occupation or '' }}" placeholder="e.g. Student">
+      <button class="btn mt">Save changes</button></form></div>
+  <div class="card"><h2>Change password</h2>
+    <form method="post"><input type="hidden" name="action" value="password">
+      <label>Current password</label><input type="password" name="old_password" required>
+      <label>New password</label><input type="password" name="new_password" required minlength="6">
+      <label>Confirm new password</label><input type="password" name="confirm" required>
+      <button class="btn mt">Update password</button></form></div>
+</div></div>{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}Goals{% endblock %}
+{% block content %}<div class="container">
+<div class="page-head"><div><h1>Goal Setting &amp; Progress</h1><p class="muted">Set a daily limit (e.g. social media under 60 min) or a daily target (e.g. study at least 90 min).</p></div></div>
+<div class="card"><h2>New goal</h2>
+<form method="post">
+  <label>Goal title</label><input name="title" placeholder="e.g. Limit social media" required maxlength="100">
+  <div class="form-row">
+    <div><label>Category</label><select name="category">{% for c in cats %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <div><label>Goal type</label><select name="goal_type"><option value="max">Stay under (limit)</option><option value="min">Reach at least (target)</option></select></div>
+    <div><label>Minutes per day</label><input type="number" name="target_min" min="1" max="1440" required></div>
+    <div><label>Start date</label><input type="date" name="start_date" value="{{ today }}" required></div>
+    <div><label>End date</label><input type="date" name="end_date" value="{{ end_default }}" required></div>
+  </div>
+  <button class="btn mt">Create goal</button>
+</form></div>
+
+<div class="grid g2 mt">
+{% for g in goals %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:start"><h3>{{ g.title }}</h3>
+    <span class="badge {{ 'b-green' if g.prog.status in ('Achieved','On track') else ('b-red' if g.prog.status=='Missed' else 'b-amber') }}">{{ g.prog.status }}</span></div>
+  <p class="muted">{{ g.category }} &middot; {{ 'Under' if g.goal_type=='max' else 'At least' }} {{ g.target_min|hm }}/day<br>{{ g.start_date.strftime('%d %b') }} → {{ g.end_date.strftime('%d %b %Y') }}</p>
+  <div class="bar"><div style="width:{{ g.prog.pct }}%"></div></div>
+  <p><b>{{ g.prog.pct }}%</b> &middot; {{ g.prog.days_met }}/{{ g.prog.days_total }} days met &middot; today: {{ g.prog.today|hm }}</p>
+  <form method="post" action="{{ url_for('goal_delete', gid=g.id) }}" data-confirm="Delete this goal?" class="mt"><button class="btn btn-danger btn-sm">Delete</button></form>
+</div>
+{% else %}<div class="card center muted" style="grid-column:1/-1">No goals yet. Create your first one above.</div>{% endfor %}
+</div></div>{% endblock %}

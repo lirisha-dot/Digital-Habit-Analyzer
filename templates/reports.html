@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% block title %}Reports{% endblock %}
+{% block content %}<div class="container">
+<div class="page-head no-print"><div><h1>Reports</h1><p class="muted">Generate, print or export your habit report.</p></div>
+  <form method="get" class="form-row" style="align-items:end;grid-template-columns:repeat(3,auto)">
+    <div><label>From</label><input type="date" name="start" value="{{ start }}"></div>
+    <div><label>To</label><input type="date" name="end" value="{{ end }}"></div>
+    <button class="btn" style="height:40px">Generate</button></form></div>
+<div class="no-print" style="margin-bottom:18px">
+  <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <a class="btn btn-outline" href="{{ url_for('reports_csv', start=start, end=end) }}">⬇ Download CSV</a></div>
+
+<div class="card">
+  <h1>Digital Habit Report</h1>
+  <p class="muted">{{ user.full_name }} ({{ user.email }})<br>Period: {{ start.strftime('%d %b %Y') }} – {{ end.strftime('%d %b %Y') }} &middot; Generated {{ generated.strftime('%d %b %Y') }}</p>
+</div>
+
+{% if not sm.days %}<div class="card mt center muted">No data for this period.</div>{% else %}
+<div class="grid g4 mt">
+  <div class="card stat"><div class="num">{{ sm.total|hm }}</div><div class="lbl">Total screen time</div></div>
+  <div class="card stat"><div class="num">{{ sm.avg|hm }}</div><div class="lbl">Daily average</div></div>
+  <div class="card stat"><div class="num">{{ sm.days }}</div><div class="lbl">Days logged</div></div>
+  <div class="card stat"><div class="num" style="font-size:1.4rem;padding:6px 0">{{ sm.top_cat }}</div><div class="lbl">Top category</div></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card"><h2>Time by category</h2><table><tr><th>Category</th><th>Time</th><th>Share</th></tr>
+    {% for c in cats %}<tr><td>{{ c.category }}</td><td>{{ c.minutes|hm }}</td><td>{{ (c.minutes*100/sm.total)|round(1) }}%</td></tr>{% endfor %}</table></div>
+  <div class="card"><h2>Time by time of day</h2><table><tr><th>Slot</th><th>Time</th></tr>
+    {% for s in slots %}<tr><td>{{ s.slot }}</td><td>{{ s.minutes|hm }}</td></tr>{% endfor %}</table></div>
+</div>
+
+<div class="card mt"><h2>Weekly summary</h2><table><tr><th>Week starting</th><th>Days</th><th>Total</th><th>Daily avg</th></tr>
+  {% for w in weekly %}<tr><td>{{ w.week }}</td><td>{{ w.days }}</td><td>{{ w.minutes|hm }}</td><td>{{ w.avg|hm }}</td></tr>{% endfor %}</table></div>
+
+<div class="grid g2 mt">
+  <div class="card"><h2>K-Means habit patterns</h2>
+  {% if km %}<table><tr><th>Pattern</th><th>Days</th><th>Avg total</th><th>Leisure</th></tr>
+    {% for s in km.summary %}<tr><td>{{ s.pattern }}</td><td>{{ s.days }}</td><td>{{ s.total|hm }}</td><td>{{ s.leisure|hm }}</td></tr>{% endfor %}</table>
+  {% else %}<p class="muted">At least 4 days of data needed.</p>{% endif %}</div>
+  <div class="card"><h2>Decision Tree classification</h2>
+  {% if tree %}<table><tr><th>Class</th><th>Days</th></tr>
+    {% for k, v in tree.distribution.items() %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</table>
+    <p class="muted">Model accuracy: {{ tree.accuracy }}%</p>{% endif %}</div>
+</div>
+
+<div class="card mt"><h2>Goals in this period</h2>
+  {% for g in goals %}<p><b>{{ g.title }}</b> ({{ g.category }}, {{ 'under' if g.goal_type=='max' else 'at least' }} {{ g.target_min|hm }}/day) — {{ g.prog.pct }}% &middot; {{ g.prog.status }}</p>
+  {% else %}<p class="muted">No goals in this period.</p>{% endfor %}</div>
+
+<div class="card mt"><h2>Daily log</h2><table><tr><th>Date</th><th>Total time</th></tr>
+  {% for d in daily %}<tr><td>{{ d.date.strftime('%d %b %Y') }}</td><td>{{ d.minutes|hm }}</td></tr>{% endfor %}</table></div>
+
+<div class="card mt"><h2>💡 Key insights</h2><ul class="clean">{% for i in insights %}<li>{{ i }}</li>{% endfor %}</ul></div>
+{% endif %}
+</div>{% endblock %}

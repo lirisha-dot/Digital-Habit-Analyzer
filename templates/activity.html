@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block title %}Activities{% endblock %}
+{% block content %}<div class="container">
+<div class="page-head"><div><h1>Digital Activity Tracking</h1><p class="muted">Log what you do on your phone, laptop or tablet.</p></div>
+  <div class="no-print">
+  <form method="post" action="{{ url_for('activity_sample') }}" style="display:inline" data-confirm="Add 30 days of random sample data?"><button class="btn btn-outline btn-sm">Load sample data</button></form>
+  <form method="post" action="{{ url_for('activity_clear') }}" style="display:inline" data-confirm="Delete ALL your activities? This cannot be undone."><button class="btn btn-danger btn-sm">Clear all</button></form></div></div>
+
+<div class="card"><h2>Add activity</h2>
+<form method="post">
+  <div class="form-row">
+    <div><label>Date</label><input type="date" name="activity_date" value="{{ today }}" max="{{ today }}" required></div>
+    <div><label>Category</label><select name="category">{% for c in cats %}<option>{{ c }}</option>{% endfor %}</select></div>
+    <div><label>App / Website</label><input name="app_name" placeholder="e.g. YouTube" required></div>
+    <div><label>Duration (minutes)</label><input type="number" name="duration_min" min="1" max="1440" required></div>
+    <div><label>Time of day</label><select name="time_slot">{% for s in slots %}<option>{{ s }}</option>{% endfor %}</select></div>
+  </div>
+  <label>Notes (optional)</label><input name="notes" maxlength="250">
+  <button class="btn mt">Save activity</button>
+</form></div>
+
+<div class="card mt"><div class="page-head" style="margin-bottom:8px"><h2>History</h2>
+  <form method="get" class="form-row" style="align-items:end;grid-template-columns:repeat(3,auto)">
+    <div><label>From</label><input type="date" name="start" value="{{ start }}"></div>
+    <div><label>To</label><input type="date" name="end" value="{{ end }}"></div>
+    <button class="btn btn-sm" style="height:40px">Filter</button></form></div>
+<div class="table-wrap"><table>
+<tr><th>Date</th><th>Category</th><th>App</th><th>Duration</th><th>Time</th><th>Notes</th><th></th></tr>
+{% for r in rows %}<tr><td>{{ r.activity_date.strftime('%d %b %Y') }}</td><td><span class="badge b-blue">{{ r.category }}</span></td>
+<td>{{ r.app_name }}</td><td>{{ r.duration_min|hm }}</td><td>{{ r.time_slot }}</td><td class="muted">{{ r.notes or '' }}</td>
+<td><form method="post" action="{{ url_for('activity_delete', aid=r.id) }}" data-confirm="Delete this activity?"><button class="btn btn-danger btn-sm">✕</button></form></td></tr>
+{% else %}<tr><td colspan="7" class="center muted">No activities in this period.</td></tr>{% endfor %}
+</table></div></div></div>{% endblock %}

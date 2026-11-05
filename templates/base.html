@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Home{% endblock %} | HabitLens</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="nav"><div class="container nav-in">
+  <a class="brand" href="{{ url_for('index') }}">📊 HabitLens</a>
+  <button class="burger" id="burger">☰</button>
+  <nav id="menu">
+    {% set ep = request.endpoint %}
+    {% if session.user_id %}
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if ep=='dashboard' }}">Dashboard</a>
+      <a href="{{ url_for('activity') }}" class="{{ 'active' if ep=='activity' }}">Activities</a>
+      <a href="{{ url_for('analysis') }}" class="{{ 'active' if ep=='analysis' }}">Analysis</a>
+      <a href="{{ url_for('goals') }}" class="{{ 'active' if ep=='goals' }}">Goals</a>
+      <a href="{{ url_for('reports') }}" class="{{ 'active' if ep=='reports' }}">Reports</a>
+      <a href="{{ url_for('profile') }}" class="{{ 'active' if ep=='profile' }}">👤 {{ session.name.split()[0] }}</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('index') }}">Home</a>
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}" class="btn-link">Get Started</a>
+    {% endif %}
+  </nav>
+</div></header>
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<div class="container">{% for c, m in msgs %}<div class="flash {{ c }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+{% endwith %}
+<main>{% block content %}{% endblock %}</main>
+<footer>Personal Digital Habit Analysis System &middot; BCA 6th Semester Project &middot; Tribhuvan University</footer>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body></html>

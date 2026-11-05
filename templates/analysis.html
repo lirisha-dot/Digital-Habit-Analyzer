@@ -1,0 +1,95 @@
+{% extends "base.html" %}{% block title %}Analysis{% endblock %}
+{% block content %}<div class="container">
+<div class="page-head"><div><h1>Daily &amp; Weekly Habit Analysis</h1><p class="muted">Machine-learning insights from your activity data.</p></div>
+  <form method="get"><select name="days" onchange="this.form.submit()">{% for d in (14,30,60,90) %}<option value="{{ d }}" {{ 'selected' if d==days }}>Last {{ d }} days</option>{% endfor %}</select></form></div>
+
+{% if not has_data %}<div class="card center"><p class="muted">No data in this period. <a href="{{ url_for('activity') }}">Add activities</a> first.</p></div>
+{% else %}
+<div class="grid g4">
+  <div class="card stat"><div class="num">{{ sm.total|hm }}</div><div class="lbl">Total screen time</div></div>
+  <div class="card stat"><div class="num">{{ sm.avg|hm }}</div><div class="lbl">Average per day</div></div>
+  <div class="card stat"><div class="num" style="font-size:1.4rem;padding:6px 0">{{ sm.top_cat }}</div><div class="lbl">Top category</div></div>
+  <div class="card stat"><div class="num" style="font-size:1.4rem;padding:6px 0">{{ sm.peak_slot }}</div><div class="lbl">Peak time of day</div></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card"><h2>Daily usage</h2><div class="chart-box"><canvas id="dailyChart"></canvas></div></div>
+  <div class="card"><h2>Weekly total &amp; daily average</h2><div class="chart-box"><canvas id="weeklyChart"></canvas></div></div>
+</div>
+<div class="card mt"><h2>Weekly breakdown</h2><div class="table-wrap"><table>
+<tr><th>Week starting</th><th>Days logged</th><th>Total</th><th>Daily average</th></tr>
+{% for w in weekly %}<tr><td>{{ w.week }}</td><td>{{ w.days }}</td><td>{{ w.minutes|hm }}</td><td>{{ w.avg|hm }}</td></tr>{% endfor %}</table></div></div>
+
+<h2 class="mt">🧩 Algorithm 1: K-Means Clustering — habit patterns</h2>
+{% if km %}
+<div class="grid g2">
+  <div class="card"><h3>Days grouped into {{ km.k }} clusters</h3>
+    <p class="muted">Features: total, leisure, productive and night minutes (standardised). Silhouette score: <b>{{ km.silhouette if km.silhouette is not none else 'n/a' }}</b></p>
+    <div class="table-wrap"><table><tr><th>Pattern</th><th>Days</th><th>Avg total</th><th>Leisure</th><th>Productive</th><th>Night</th></tr>
+    {% for s in km.summary %}<tr><td><b>{{ s.pattern }}</b></td><td>{{ s.days }}</td><td>{{ s.total|hm }}</td><td>{{ s.leisure|hm }}</td><td>{{ s.productive|hm }}</td><td>{{ s.night|hm }}</td></tr>{% endfor %}</table></div></div>
+  <div class="card"><h3>Cluster scatter plot</h3><div class="chart-box"><canvas id="kmChart"></canvas></div></div>
+</div>
+{% else %}<div class="card muted">K-Means needs at least 4 days of data. You have {{ n_days }}.</div>{% endif %}
+
+<h2 class="mt">🌳 Algorithm 2: Decision Tree — habit health classification</h2>
+{% if tree %}
+<div class="grid g2">
+  <div class="card"><h3>Your days classified</h3>
+    <div class="chart-box" style="height:230px"><canvas id="treeDist"></canvas></div>
+    <p class="muted">Model hold-out accuracy: <b>{{ tree.accuracy }}%</b></p></div>
+  <div class="card"><h3>Which feature matters most?</h3><div class="chart-box" style="height:230px"><canvas id="treeImp"></canvas></div></div>
+</div>
+<div class="grid g2 mt">
+  <div class="card"><h3>Learned rules (class 0 = Healthy, 1 = Moderate, 2 = Unhealthy)</h3><pre>{{ tree.rules }}</pre></div>
+  <div class="card"><h3>🔮 What-if predictor</h3><p class="muted">Enter a hypothetical day (minutes) and the tree predicts its health class.</p>
+    <div class="form-row">
+      <div><label>Total</label><input type="number" id="w_total" value="300" min="0"></div>
+      <div><label>Leisure</label><input type="number" id="w_leisure" value="150" min="0"></div>
+      <div><label>Productive</label><input type="number" id="w_prod" value="60" min="0"></div>
+      <div><label>Night</label><input type="number" id="w_night" value="60" min="0"></div></div>
+    <button class="btn mt" id="predictBtn" type="button">Predict</button>
+    <p class="mt" id="predResult" style="font-size:1.2rem;font-weight:700"></p></div>
+</div>
+{% endif %}
+
+<div class="card mt"><h2>💡 Insights</h2><ul class="clean">{% for i in insights %}<li>{{ i }}</li>{% endfor %}</ul></div>
+{% endif %}
+</div>{% endblock %}
+{% block scripts %}{% if has_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const DAILY = {{ daily|tojson }}, WEEKLY = {{ weekly|tojson }}, KM = {{ km|tojson }}, TREE = {{ tree|tojson }};
+new Chart(document.getElementById("dailyChart"), {type:"line",
+  data:{labels:DAILY.labels,datasets:[
+    {label:"Total",data:DAILY.total,borderColor:COLORS[0],tension:.3},
+    {label:"Leisure",data:DAILY.leisure,borderColor:COLORS[3],tension:.3},
+    {label:"Productive",data:DAILY.productive,borderColor:COLORS[1],tension:.3}]},
+  options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:"Minutes"}}}}});
+new Chart(document.getElementById("weeklyChart"), {type:"bar",
+  data:{labels:WEEKLY.map(w=>w.week),datasets:[
+    {label:"Weekly total",data:WEEKLY.map(w=>w.minutes),backgroundColor:COLORS[0]},
+    {label:"Daily avg",type:"line",data:WEEKLY.map(w=>w.avg),borderColor:COLORS[2]}]},
+  options:{maintainAspectRatio:false}});
+if (KM) {
+  const pc = {"Productive Days":COLORS[1],"Balanced Days":COLORS[2],"Distracted Days":COLORS[3]};
+  const ds = KM.summary.map(s => ({label:s.pattern,backgroundColor:pc[s.pattern],pointRadius:6,
+    data:KM.days.filter(d=>d.pattern===s.pattern).map(d=>({x:d.total,y:d.leisure}))}));
+  new Chart(document.getElementById("kmChart"),{type:"scatter",data:{datasets:ds},
+    options:{maintainAspectRatio:false,scales:{x:{title:{display:true,text:"Total minutes"}},y:{title:{display:true,text:"Leisure minutes"}}}}});
+}
+if (TREE) {
+  new Chart(document.getElementById("treeDist"),{type:"doughnut",
+    data:{labels:Object.keys(TREE.distribution),datasets:[{data:Object.values(TREE.distribution),backgroundColor:[COLORS[1],COLORS[2],COLORS[3]]}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"right"}}}});
+  new Chart(document.getElementById("treeImp"),{type:"bar",
+    data:{labels:TREE.importance.map(i=>i.feature),datasets:[{label:"Importance",data:TREE.importance.map(i=>i.value),backgroundColor:COLORS[0]}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  document.getElementById("predictBtn").addEventListener("click", async () => {
+    const body = {total:+w_total.value,leisure:+w_leisure.value,productive:+w_prod.value,night:+w_night.value};
+    const r = await fetch("{{ url_for('api_predict') }}",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const j = await r.json(), el = document.getElementById("predResult");
+    el.textContent = j.label ? "Predicted: " + j.label : "Error: " + j.error;
+    el.style.color = {Healthy:"#16a34a",Moderate:"#d97706",Unhealthy:"#dc2626"}[j.label] || "inherit";
+  });
+}
+</script>{% endif %}{% endblock %}

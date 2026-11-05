@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% block title %}Dashboard{% endblock %}
+{% block content %}<div class="container">
+<div class="page-head"><div><h1>Hello, {{ session.name.split()[0] }} 👋</h1><p class="muted">Your digital habit overview for the last 30 days.</p></div>
+  <div><a class="btn" href="{{ url_for('activity') }}">+ Add Activity</a></div></div>
+
+{% if not has_data %}
+<div class="card center"><h2>No activity data yet</h2>
+  <p class="muted">Add your first activity, or load 30 days of sample data to explore every feature.</p>
+  <div class="mt"><a class="btn" href="{{ url_for('activity') }}">Add Activity</a>
+  <form method="post" action="{{ url_for('activity_sample') }}" style="display:inline"><button class="btn btn-outline">Load Sample Data</button></form></div></div>
+{% else %}
+<div class="grid g4">
+  <div class="card stat"><div class="num">{{ today_min|hm }}</div><div class="lbl">Screen time today</div></div>
+  <div class="card stat"><div class="num">{{ sm.avg|hm }}</div><div class="lbl">Daily average (30 days)</div></div>
+  <div class="card stat"><div class="num" style="font-size:1.4rem;padding:6px 0">{{ sm.top_cat }}</div><div class="lbl">Top category ({{ sm.top_pct }}%)</div></div>
+  <div class="card stat"><div class="num" style="font-size:1.4rem;padding:6px 0">
+    {% if today_status %}<span class="badge {{ {'Healthy':'b-green','Moderate':'b-amber','Unhealthy':'b-red'}[today_status] }}" style="font-size:1rem">{{ today_status }}</span>{% else %}—{% endif %}</div>
+    <div class="lbl">Today's habit (Decision Tree)</div></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card"><h2>Last 7 days</h2><div class="chart-box"><canvas id="weekChart"></canvas></div></div>
+  <div class="card"><h2>Time by category</h2><div class="chart-box"><canvas id="catChart"></canvas></div></div>
+  <div class="card"><h2>Usage by time of day</h2><div class="chart-box"><canvas id="slotChart"></canvas></div></div>
+  <div class="card"><h2>🎯 Active goals</h2>
+    {% for g in goals %}<div style="margin-bottom:14px"><b>{{ g.title }}</b>
+      <span class="badge b-blue" style="float:right">{{ g.prog.pct }}%</span>
+      <div class="bar"><div style="width:{{ g.prog.pct }}%"></div></div>
+      <small class="muted">{{ g.prog.days_met }} of {{ g.prog.days_total }} days met &middot; {{ g.prog.status }}</small></div>
+    {% else %}<p class="muted">No active goals. <a href="{{ url_for('goals') }}">Set one now</a>.</p>{% endfor %}</div>
+</div>
+<div class="card mt"><h2>💡 Insights</h2><ul class="clean">{% for i in insights %}<li>{{ i }}</li>{% endfor %}</ul></div>
+{% endif %}
+</div>{% endblock %}
+{% block scripts %}{% if has_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const D = {{ data|tojson }};
+new Chart(document.getElementById("weekChart"), {type:"bar",
+  data:{labels:D.week.labels,datasets:[
+    {label:"Productive",data:D.week.productive,backgroundColor:COLORS[1]},
+    {label:"Leisure",data:D.week.leisure,backgroundColor:COLORS[3]},
+    {label:"Total",type:"line",data:D.week.total,borderColor:COLORS[0],tension:.3}]},
+  options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:"Minutes"}}}}});
+new Chart(document.getElementById("catChart"), {type:"doughnut",
+  data:{labels:D.categories.map(c=>c.category),datasets:[{data:D.categories.map(c=>c.minutes),backgroundColor:COLORS}]},
+  options:{maintainAspectRatio:false,plugins:{legend:{position:"right"}}}});
+new Chart(document.getElementById("slotChart"), {type:"bar",
+  data:{labels:D.slots.map(s=>s.slot),datasets:[{label:"Minutes",data:D.slots.map(s=>s.minutes),backgroundColor:COLORS[4]}]},
+  options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+</script>{% endif %}{% endblock %}
